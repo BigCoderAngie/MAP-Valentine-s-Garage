@@ -2,7 +2,7 @@
 
 ### **1. High-Level Design (HLD) - The Architecture**
 
-To get the 20/20 for "App Architecture (Layered architecture, modularisation, and resources files)," we will use a modern multi-module MVVM (Model-View-ViewModel) architecture.
+To get the 20/20 for "App Architecture (Layered architecture, modularisation, and resource files)," we will use a modern multi-module MVVM (Model-View-ViewModel) architecture, inspired by Google's official *Now in Android* app.
 
 **The Tech Stack:**
 
