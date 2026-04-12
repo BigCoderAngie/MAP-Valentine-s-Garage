@@ -1,4 +1,4 @@
-### **Stage 3: Design**
+## **Stage 3: Design**
 
 ### **1. High-Level Design (HLD) - The Architecture**
 
@@ -93,59 +93,133 @@ data class Task(
 
 ### **3. UI/UX Design - Screens**
 
-Since the app has two distinct roles (MECHANIC and ADMIN), we will design two separate user journeys.
+### **Global Design System (Feed this to the AI first)**
 
-*Security Note:* The **Login Screen** explicitly removes the "Create Account" option. It acts as an industrial "Authorized Personnel Only" portal. It routes the user based on their Firestore `role` securely.
+- **Design Language:** Material Design 3 (MD3).
+- **Theme/Vibe:** Industrial, Enterprise, Secure, High-Contrast, Professional.
+- **Color Palette:**
+    - **Primary:** Industrial Orange (`#FF6D00`) - Used for primary actions, FABs, and active states.
+    - **Secondary:** Steel Blue/Grey (`#455A64`) - Used for secondary buttons and app bars.
+    - **Background (Light Mode):** Light Ash Grey (`#F5F7F8`) to reduce glare.
+    - **Background (Dark Mode):** Deep Slate (`#1E272C`).
+    - **Success:** Emerald Green (`#2E7D32`) for completed tasks.
+    - **Warning:** Amber (`#FFC107`) for "In Progress" states.
+- **Typography:** 'Inter' or 'Roboto'. Bold/Black for headers, Medium for buttons, Regular for body text.
+- **Card Style:** Elevated cards with 8dp rounded corners, subtle drop shadow, and padding of 16dp.
 
-### **Journey A: The Mechanic (The Garage Floor)**
-
-*This journey focuses on efficiency, large tap targets, and collaborative workspaces.*
-
-**1. Mechanic Dashboard (The Active Garage)**
-
-- **Purpose:** The home screen for mechanics to see which vehicles are currently being worked on.
-- **UI Elements:**
-    - **Top App Bar:** Shows "Active Repairs" and the logged-in mechanic's name.
-    - **Main Content (LazyColumn):** A scrollable list of Material Design Cards. Each card represents an *Active Check-In Event* showing the Truck Model, License Plate, and Time Arrived.
-    - **Floating Action Button (FAB):** A large button in the bottom right with a "+" icon to initiate a New Check-In.
-
-**2. New Check-In Screen (The "Airplane Boarding" Concept)**
-
-- **Purpose:** Registering a specific instance of a truck arriving and defining its required scope of work.
-- **UI Elements:**
-    - **Vehicle Identification:** Text fields for License Plate and Truck Model.
-    - **Current State Logging:** A numeric input for **Current Kilometers** and a multi-line text area for **Initial Condition** (e.g., "Scratched left bumper, leaking oil").
-    - **Required Repairs / Services Input:** A dynamic list where the mechanic types in the specific tasks requested by the customer (e.g., "Replace brake pads", "Change oil").
-    - **Action Button:** A prominent "Authorise Check-In" button. Pressing this creates the `CheckIn` document AND automatically generates the specific `Task` documents defined in the dynamic list for this event.
-
-**3. Collaborative Service Board (The Workshop)**
-
-- **Purpose:** Where mechanics claim tasks, tick them off, and write notes. This screen supports real-time Firebase updates using a Scrum/Kanban board layout (HorizontalPager or categorised headers).
-- **UI Elements:**
-    - **Header:** Displays the Truck info and Initial Condition as a reminder.
-    - **Tab 1: To Do (Pending):** A list of all tasks created during check-in. Any mechanic can tap a "Start Work" button on a task.
-    - **Tab 2: In Progress:** When a mechanic taps "Start Work", the task moves here. It displays a badge: **"In Progress by [Mechanic's Name]"**. Other mechanics can see it but cannot complete it. Only the assigned mechanic can tap the "Mark Done & Add Notes" button.
-    - **Tab 3: Done:** Once completed, the task moves here. It shows a green badge: **"Completed by [Mechanic's Name]"** along with their repair notes (fulfilling the Accountability requirement).
-    - **Action Button:** "Mark Repair as Complete" (sets the Check-In to complete and removes the truck from the Active Garage dashboard).
+*Security Note:* The **Login Screen** explicitly removes the "Create Account" option. It acts as an industrial "Authorised Personnel Only" portal. It routes the user based on their Firestore `role` securely.
 
 ---
 
-### **Journey B: Valentine / Admin (The HQ)**
+### **Screen 1: The Login Screen (Shared Entry Point)**
 
-*This journey focuses on data visualisation, accountability, and reporting.*
+- **Layout:** Vertical centered alignment.
+- **Top/Background:** A subtle gradient background (Light grey to white).
+- **Logo/Header:** An industrial wrench/gear icon inside a soft grey rounded square. Below it, bold text: **"VALENTINE’S GARAGE"** and a subtitle in grey: *"Precision Diagnostics & Repair Portal"*.
+- **Main Card (Center):** A white elevated card containing:
+    - Text input field 1: Label "TECHNICIAN EMAIL", left icon (user silhouette), placeholder "[name@valentines.com](mailto:name@valentines.com)". Background slightly grey.
+    - Text input field 2: Label "SECURITY KEY", left icon (padlock), placeholder "••••••••". Right-aligned above it, a small orange text link: "FORGOT PASSWORD?".
+    - Button: Large, full-width, filled Primary Orange button. Text: **"INITIALIZE SESSION"** with a "login" arrow icon on the right.
+- **Footer:** Small, centered grey text at the absolute bottom: *"© 2026 VALENTINE'S GARAGE. INTERNAL USE ONLY. AUTHORISED PERSONNEL PROCEED."*
 
-**4. Admin Dashboard (The Overseer)**
+---
 
-- **Purpose:** Valentine’s home screen to get a bird's-eye view of garage operations.
-- **UI Elements:**
-    - **Analytics Header:** Quick stats (e.g., "Trucks Serviced This Week: 14").
-    - **Search/Filter Bar:** To search for a specific license plate.
-    - **History List (LazyColumn):** A historical log of all Check-In events, sorted by date. Each card shows the Truck ID, Date, and a status badge ("Completed" or "In Progress"). Tapping a card opens the Report Details.
+### **Journey A: The Mechanic (The Garage Floor)**
 
-**5. Accountability Report Screen (The Audit)**
+*UI Focus: Large tap targets (for gloved hands), high visibility, and fast interactions.*
 
-- **Purpose:** A read-only screen for Valentine to verify *who* did *what*, preventing the "I thought another colleague did it" excuse.
-- **UI Elements:**
-    - **Intake Summary Card:** Shows the exact kilometers and the condition the truck was in when it arrived.
-    - **Audit Trail List:** A timeline or list showing every required task for that check-in.
-    - **Accountability Tags:** Next to every completed task, it explicitly lists the **Mechanic's Name**, the **Timestamp** of when they checked it off, and the **Notes** they left.
+### **Screen 2: Mechanic Dashboard (Active Repairs)**
+
+- **Top App Bar:** Steel Grey background. Left title: "Active Repairs". Right side: Mechanic’s Profile Avatar (circle).
+- **Content Area:** A `LazyColumn` (vertically scrolling list) with a light grey background.
+- **List Item (Vehicle Card):**
+    - White elevated card.
+    - **Top Row:** Bold License Plate text (e.g., "N 12345 W") on the left. On the right, a grey pill-shaped badge showing the time elapsed since arrival (e.g., "2 hrs ago").
+    - **Middle Row:** Subtitle text showing Vehicle Model (e.g., "Toyota Hilux").
+    - **Bottom Row:** A horizontal progress bar (Orange) showing task completion (e.g., "2/5 Tasks Done").
+- **Floating Action Button (FAB):** Positioned bottom-right. Large, circular, Primary Orange background with a bold white "+" icon. (Action: Opens New Check-In).
+
+### **Screen 3: New Check-In (The "Airplane Boarding" Form)**
+
+- **Top App Bar:** Title "New Vehicle Intake". Left arrow to go back.
+- **Content Area:** Vertically scrolling form.
+    - **Section 1: Vehicle Identity:** Two outlined text fields side-by-side (License Plate, Vehicle Model).
+    - **Section 2: Current Metrics:** Numeric input field labeled "Odometer (Kilometers)" with a speedometer icon.
+    - **Section 3: Initial Condition:** A large, multi-line text area labeled "Intake Condition Report". Placeholder: "Describe any existing scratches, dents, or leaks..."
+    - **Section 4: Required Tasks (Dynamic List):**
+        - An input field labeled "Add Repair Task" with an orange "ADD" button next to it.
+        - Below it, a list of added tasks displayed as dismissible chips or small rows with an "X" icon to remove them.
+- **Bottom Sticky Bar:** A thick white container anchored to the bottom. Contains a full-width, Primary Orange button: **"AUTHORISE CHECK-IN"**.
+
+### **Screen 4: Collaborative Service Board (Scrum/Kanban)**
+
+- **Top App Bar:** Shows License Plate and Model.
+- **Sub-Header Card:** A collapsed card at the top. Shows Odometer and Intake Condition. (Expandable if tapped).
+- **Navigation/Tabs:** A sticky `TabRow` just below the header with 3 equally spaced tabs: **"TO DO"**, **"IN PROGRESS"**, **"DONE"**. The active tab has an orange underline.
+- **Tab View 1 (TO DO):**
+    - List of task cards.
+    - Card shows Task Description in bold.
+    - Bottom right of the card: An outlined orange button **"START WORK"**. (Tapping moves it to In Progress).
+- **Tab View 2 (IN PROGRESS):**
+    - Card shows Task Description.
+    - Below description: An Amber/Yellow badge with a person icon reading: *"In Progress by [Mechanic Name]"*.
+    - If the logged-in mechanic owns the task: A filled orange button **"FINISH & ADD NOTES"** appears. If owned by someone else, button is hidden.
+- **Bottom Sheet Modal (Triggered by "Finish & Add Notes"):**
+    - Slides up from the bottom. Title: "Complete Task".
+    - Text input field: "Repair Notes / Parts Used".
+    - Full-width Green button: **"MARK AS DONE"**.
+- **Tab View 3 (DONE):**
+    - Card shows Task Description with a strikethrough.
+    - Below description: A Green badge reading: *"Completed by [Mechanic Name]"*.
+    - A grey text block below showing the exact notes they typed.
+
+---
+
+### **Journey B: Admin / Valentine (The HQ)**
+
+*UI Focus: Data density, analytics, read-only audit trails, and filtering.*
+
+### **Screen 5: Admin Dashboard (Overview)**
+
+- **Navigation:** BottomNavigationBar (Tabs: **OVERVIEW** [Active], **PROFILE** [Inactive]).
+- **Top App Bar:** Steel Grey background. Title "Valentine's Overview".
+- **Analytics Header (Top):** A horizontal scrolling row (`LazyRow`) of square summary cards:
+    - Card 1: "Vehicles Today" (Big number: 14)
+    - Card 2: "Active Repairs" (Big number: 6)
+    - Card 3: "Completed Today" (Big number: 8)
+- **Search Bar:** Below the metrics. A full-width search input with a magnifying glass icon. Placeholder: "Search by License Plate or Mechanic".
+- **Content Area (History List):**
+    - List of historical Check-In cards.
+    - Card Layout: Left side shows Date & Time. Middle shows License Plate & Model. Right side shows a status badge (Green "COMPLETED" or Orange "IN PROGRESS").
+
+### **Screen 6: Accountability Report (The Audit Trail)**
+
+- **Top App Bar:** Title "Audit Report: [License Plate]". Left arrow to go back. Right side: A "Print/Export" icon.
+- **Top Section (Intake Snapshot):**
+    - A solid grey card containing static data: Arrival Time, Checked-in By (Name), Intake Kilometers, and the exact Initial Condition text.
+- **Middle Section (The Timeline):**
+    - A vertical timeline UI (a line running down the left side with dots for each task).
+    - Next to each dot is a Task Card.
+    - **Task Card Design:**
+        - Task Name (e.g., "Brake Pad Replacement").
+        - **Accountability Tag:** A distinct UI row inside the card with a tiny avatar, showing: *"Actioned by: John Doe at 14:35"*.
+        - **Notes Block:** A light yellow or grey box with quote marks containing the mechanic's exact notes (e.g., *"Replaced front pads. Rotors looked fine."*).
+- **Bottom Section (Sign-off):**
+    - If the vehicle is completed, a large green footer block: "VEHICLE CLEARED".
+
+---
+
+### **Shared Screens**
+
+**7. User Profile**
+
+- **Purpose:** Session management and settings.
+- **Navigation:** BottomNavigationBar (Tabs: **GARAGE/OVERVIEW** [Inactive], **PROFILE** [Active]).
+- **Top App Bar:** Title "My Profile".
+- **Content:**
+    - Large centered User Avatar (Circle).
+    - Text: "John Doe" (Large, Bold).
+    - Text: "Role: Senior Mechanic" (Grey, Medium).
+    - Spacer.
+    - An Outlined Button: "Change Password".
+    - A large filled Red Button at the bottom: **"SECURE LOGOUT"**.
