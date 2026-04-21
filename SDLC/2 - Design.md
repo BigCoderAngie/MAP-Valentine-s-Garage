@@ -131,7 +131,8 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
 - **Typography:** 'Inter' or 'Roboto'. Bold/Black for headers, Medium for buttons, Regular for body text.
 - **Card Style:** Elevated cards with 8dp rounded corners, subtle drop shadow, and padding of 16dp.
 
-![image.png](attachment:85645f5f-38e2-47cd-9c1c-265b07e9579b:image.png)
+<img width="1430" height="802" alt="image" src="https://github.com/user-attachments/assets/6bc93665-9098-4cdb-8304-c71307b8e87e" />
+
 
 ---
 
@@ -146,7 +147,8 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
 
 *Security Note:* The **Login Screen** explicitly removes the "Create Account" option. It acts as an industrial "Authorised Personnel Only" portal. It routes the user based on their Firestore `role` securely.
 
-![image.png](attachment:2f2c9448-7a66-4877-a82b-6e21df7691b7:image.png)
+<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/2f37f5e2-6675-4fd4-9a5a-c58e83655e0c" />
+
 
 **Screen 2: Mechanic Dashboard (Active Repairs)**
 
@@ -158,7 +160,8 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - Bottom: "PROGRESS" text with a percentage and an Orange LinearProgressIndicator.
 - **Action:** Bottom-right Orange FAB (Rounded Square shape) with a white "+" icon.
 
-![image.png](attachment:c425c01e-4144-48e2-b65a-5fbb75eb5ea5:image.png)
+<img width="467" height="1600" alt="image" src="https://github.com/user-attachments/assets/e41f2191-5c62-4e82-9108-e3a8eb75059d" />
+
 
 **Screen 3: New Check-In ("New Vehicle Intake")**
 
@@ -171,7 +174,8 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - **Section 5 (Dynamic List):** "MAINTENANCE SCOPE". Two input fields: "TASK NAME" and "TASK DESCRIPTION". Large Orange "ADD" button below them. Added tasks appear below as light blue chips (e.g., "OIL CHANGE X").
 - **Action:** Bottom sticky Orange button: **"AUTHORIZE CHECK-IN"**.
 
-![image.png](attachment:16c43daf-55ff-434f-92ff-a96a67546cb5:image.png)
+<img width="428" height="1600" alt="image" src="https://github.com/user-attachments/assets/cd923142-ec1e-4ed9-aa02-2f7ba7405a38" />
+
 
 **Screen 4: Collaborative Service Board (Scrum Board)**
 
@@ -186,14 +190,11 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - Text input field: "REPAIR NOTES / PARTS USED".
     - Action: Full-width Green button **"MARK AS DONE ✔"**.
     
-    ![image.png](attachment:fc46082e-b1c0-4b3a-987b-763f48eb3b1e:image.png)
-    
+<img width="684" height="1600" alt="image" src="https://github.com/user-attachments/assets/8e53e4c1-0795-4a09-a650-77521ea09e3a" />
+<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/b2f7ef88-a093-4c2a-a692-45fde309190b" />
+<img width="532" height="1600" alt="image" src="https://github.com/user-attachments/assets/83120913-2ca5-4df1-8b7a-8574a671f8e0" />
+<img width="588" height="1600" alt="image" src="https://github.com/user-attachments/assets/2a40623c-77e5-4285-9df9-04747cbc0918" />
 
-![image.png](attachment:b4a288a1-5a2d-4809-a8f1-f101893d3667:image.png)
-
-![image.png](attachment:fad6d308-37ce-4173-b2a5-4e2c061639dd:image.png)
-
-![image.png](attachment:eab61c4f-d7d1-4080-ba3c-83a89337fc8d:image.png)
 
 ---
 
@@ -208,7 +209,8 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - **Search Bar:** OutlinedTextField: "Search License Plate".
     - **History List ("Daily Log"):** List of check-ins. Left: Time/Date. Middle: License Plate & Model. Right: Status pill (Light Blue "COMPLETED" or Light Orange "IN PROGRESS").
     
-    ![image.png](attachment:57231efb-8911-47e9-bcde-64dc4c9b2a8a:image.png)
+<img width="426" height="1600" alt="image" src="https://github.com/user-attachments/assets/1bd41f89-6b3d-4dfc-9eec-d74ec8ecefdb" />
+
     
 
 **Screen 6: Accountability Report (The Audit Trail)**
@@ -223,7 +225,8 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
         - **Notes:** Pale yellow bordered box containing the exact diagnostic notes in italics.
 - **Action:** Bottom sticky Vibrant Blue button: **"✔ VEHICLE CLEARED"** (Updates `CheckIn.isCompleted` to `true`).
 
-![image.png](attachment:65ecedcc-72cb-4d77-8233-b7f3c5e8b518:image.png)
+<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/c8c8275f-9b75-42d0-b3a9-e2309a8a842d" />
+
 
 ---
 
@@ -240,7 +243,8 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - List Item: "Change Password" row with an arrow.
 - **Action:** Large Deep Red Button: **"SECURE LOGOUT"** (Terminates Firebase session).
 
-![image.png](attachment:36d1103d-9363-4726-84fa-be39448fb6bd:image.png)
+<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/aa1f6a43-9694-4b95-b04f-64f438254801" />
+
 
 ---
 
@@ -253,8 +257,6 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
 This design system moves beyond the generic utility of industrial software to create a "Digital Foreman" experience—an environment that feels as authoritative and well-engineered as the heavy machinery it manages. We are eschewing the "flat web" look in favor of **Organic Industrialism**.
 
 The aesthetic is characterized by high-contrast legibility, intentional asymmetry, and a sophisticated layering of neutral tones that mimic the depth of a professional garage floor. By breaking the standard grid with overlapping elements and using tonal shifts instead of structural lines, we create a UI that feels high-end, secure, and bespoke.
-
----
 
 ## 2. Colors & Tonal Architecture
 
@@ -277,8 +279,6 @@ To prevent the UI from feeling "flat" or "dated," incorporate the following:
 - **Signature Textures:** Main CTAs should use a subtle vertical gradient from `primary` (#9f4200) to `primary_container` (#ff6d00). This provides a "machined" metallic sheen.
 - **Glassmorphism:** Floating elements, such as navigation rails or top-tier modals, should utilize a semi-transparent `surface` color with a `20px` backdrop-blur. This ensures the industrial "Iron" background bleeds through, softening the interface while maintaining hierarchy.
 
----
-
 ## 3. Typography: The Engineered Scale
 
 We use typography to reinforce the "Professional/Enterprise" vibe.
@@ -294,8 +294,6 @@ We use typography to reinforce the "Professional/Enterprise" vibe.
 | **Title-SM** | Inter | 1rem | Semi-Bold |
 | **Body-MD** | Inter | 0.875rem | Regular |
 | **Label-MD** | Inter | 0.75rem | Medium (All Caps) |
-
----
 
 ## 4. Elevation & Depth
 
@@ -320,8 +318,6 @@ Traditional drop shadows are too "software-standard." Instead, use **Ambient Sha
 ### The "Ghost Border" Fallback
 
 If a border is required for accessibility (e.g., in high-glare environments), use the **Ghost Border**: The `outline_variant` token at **15% opacity**. Never use 100% opaque borders.
-
----
 
 ## 5. Components
 
@@ -349,8 +345,6 @@ For industrial workflows, use high-contrast status chips.
 
 - **Success:** Emerald Green (#2E7D32) background, white text, `none` (0px) corner radius for a "stamped" label look.
 
----
-
 ## 6. Do’s and Don’ts
 
 ### Do:
@@ -368,4 +362,4 @@ For industrial workflows, use high-contrast status chips.
 
 ---
 
-**Director's Note:** This system is about the *weight* of the interface. Every element should feel like it was bolted into place with purpose. Respect the white space; it is the "ventilation" of your design.```
+**Director's Note:** This system is about the *weight* of the interface. Every element should feel like it was bolted into place with purpose. Respect the white space; it is the "ventilation" of your design.
