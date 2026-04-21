@@ -2,7 +2,7 @@
 
 ## **Sprint 0: Foundation & Environment Setup**
 **Goal:** Have a compiling Android Studio project with the Multi-Module Architecture and Firebase connected.
-**Assignee:** Lead Architect (Member 1)
+**Assignee:** Lead Architect
 
 ### **Task 0.1: Project Initialization**
 ### **Task 0.2: Firebase Console Setup**
@@ -13,7 +13,7 @@
 
 ## **Sprint 1: The Design System & Data Models**
 **Goal:** Define the visual language ("Digital Foreman") and the static data structures. 
-**Assignees:** UI/Frontend Lead (Member 2) & Lead Architect
+**Assignees:** UI/Frontend Lead & Lead Architect
 
 ### **Task 1.1: Core Models (`:core:model`)**
 ### **Task 1.2: The Design System (`:core:ui`)**
@@ -22,7 +22,7 @@
 
 ## **Sprint 2: Firebase Repository & Business Logic**
 **Goal:** Have functional data mappers, offline persistence, and domain interactions ready for the UI layer.
-**Assignee:** Business Logic Lead (Member 3)
+**Assignee:** Business Logic Lead
 
 ### **Task 2.1: Domain Interfaces (`:core:domain`)**
 ### **Task 2.2: DTOs and Mappers (`:core:data`)**
@@ -63,7 +63,7 @@
 
 ## **Sprint 6: Testing, Polish, & Grading Requirements**
 **Goal:** Prove the code works to satisfy the 20/20 Code Rubric mark. Ensure no crashes.
-**Assignee:** QA / Member 4
+**Assignee:** QA
 
 ### **Task 6.1: JVM Unit Tests (`src/test/`)**
 ### **Task 6.2: Jetpack Compose UI Tests (`src/androidTest/`)**
