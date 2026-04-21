@@ -26,22 +26,23 @@ Following the strict dependency rules (Higher-level modules depend on lower-leve
     - `:feature:mechanic` *(Collaborative Service Board & Dashboards)*
     - `:feature:admin` *(Valentine's Overview & Audit Trails)*
 
-*Architectural Flow (UDF):* Firebase ➔ `:core:data` (Impl) ➔ `:core:domain` (Interface) ➔ `ViewModel` ➔ `StateFlow` ➔ Jetpack Compose UI.
+*Architectural Flow (UDF):* Firebase ➔ `:core:data` (DTO & Mapper) ➔ `:core:domain` (Pure Domain Model via Interface) ➔ `ViewModel` ➔ `StateFlow` ➔ Jetpack Compose UI.
 
 ---
 
 ## **2. Low-Level Design (LLD) - Firebase Schema & Kotlin Data Models**
 
-The Firestore NoSQL schema maps to the UI elements. These pure Kotlin definitions live in `:core:model`.
+To maintain a strict Clean Architecture, we explicitly separate **Data Transfer Objects (DTOs)** used by Firebase from **Domain Models** used by the UI layer. `:core:data` uses mapping functions to convert DTOs (which often require default values and nullability) into Pure Domain Models.
 
 **Collection 1: `users`** *(Admin provisions accounts via Firebase Console, mechanics use "Forgot Password").*
 
 ```kotlin
+// Domain Model Representation
 data class User(
-    val id: String = "",           // Firebase Auth UID
-    val name: String = "",         // e.g., "John Doe"
-    val initials: String = "",     // e.g., "JD" (used for UI avatars)
-    val role: Role = Role.MECHANIC // Enum: MECHANIC or ADMIN
+    val id: String,                // Firebase Auth UID
+    val name: String,              // e.g., "John Doe"
+    val initials: String,          // e.g., "JD" (used for UI avatars)
+    val role: Role                 // Enum: MECHANIC or ADMIN
 )
 enum class Role { MECHANIC, ADMIN }
 ```
@@ -50,51 +51,58 @@ enum class Role { MECHANIC, ADMIN }
 
 ```kotlin
 data class Vehicle(
-    val id: String = "",
-    val licensePlate: String = "",
-    val model: String = ""
+    val id: String,
+    val licensePlate: String,
+    val model: String
 )
 ```
 
-**Collection 3: `check_ins`** *(The core intake event: If a truck comes twice, it's two separate events).*
+**Collection 3: `check_ins`** *(The core intake event).*
 
 ```kotlin
 data class CheckIn(
-    val id: String = "",
-    val vehicleId: String = "",
-    val timestamp: Long = 0L,        // Arrival time
-    val kilometersDriven: Int = 0,   // "Odometer" reading
-    val initialCondition: String = "",
-    val checkedInBy: String = "",    // UID / Name of the mechanic who logged it
-    val isCompleted: Boolean = false // Set to true when Admin clicks "VEHICLE CLEARED"
+    val id: String,
+    val vehicleId: String,
+    val timestamp: Long,            // Arrival time
+    val kilometersDriven: Int,      // "Odometer" reading
+    val initialCondition: String,
+    val checkedInBy: String,        // UID / Name of the mechanic who logged it
+    val isCompleted: Boolean        // Set to true when Admin clicks "VEHICLE CLEARED"
 )
 ```
 
-**Collection 4: `tasks`** *(The collaborative checklist supporting a Scrum/Kanban workflow).*
+**Sub-Collection 3.1: `tasks`** *(Located at `check_ins/{checkInId}/tasks/{taskId}`).*
+*Tasks are closely tied to individual check-ins, so they form a nested sub-collection for optimal querying and data scoping. A mechanic will only view tasks scoped to a selected check-in event.*
 
 ```kotlin
 enum class TaskStatus { TODO, IN_PROGRESS, DONE }
 enum class TaskPriority { HIGH, NORMAL, LOW }
 
 data class Task(
-    val id: String = "",
-    val checkInId: String = "",      // Links to the specific CheckIn event
-    val name: String = "",           // e.g., "Oil Filter Replacement"
-    val description: String = "",    // e.g., "Full synthetic 5W-30 replacement..."
-    val status: TaskStatus = TaskStatus.TODO,
-    val priority: TaskPriority = TaskPriority.NORMAL,
-    val mechanicId: String? = null,  // Accountability: WHO claimed/finished it
-    val mechanicName: String? = null,
-    val mechanicInitials: String? = null, // e.g., "JD"
-    val completedAt: Long? = null,   // Feeds the "Actioned by... at 14:35" Audit UI
-    val notes: String = ""           // Diagnostic notes added upon completion
+    val id: String,
+    val name: String,               // e.g., "Oil Filter Replacement"
+    val description: String,        // e.g., "Full synthetic 5W-30 replacement..."
+    val status: TaskStatus,
+    val priority: TaskPriority,
+    val mechanicId: String?,        // Accountability: WHO claimed/finished it
+    val mechanicName: String?,
+    val mechanicInitials: String?,  // e.g., "JD"
+    val completedAt: Long?,         // Feeds the "Actioned by... at 14:35" Audit UI
+    val notes: String               // Diagnostic notes added upon completion
 )
 ```
 
 ---
 
-## **3. Data Processing & Functional Programming Strategy**
+## **3. Data Management, Concurrency & Processing Strategy**
 
+### **3.1 Offline Resilience**
+The garage environment can have spotty connectivity. We will explicitly enable **Firestore Offline Persistence** natively in the app module. This allows mechanics to tick off tasks in dead zones (e.g., under a truck or in the back warehouse). The SDK will transparently cache these operations and synchronize automatically once network coverage is restored, providing a "Zero-Latency" feel.
+
+### **3.2 Concurrency & Race Conditions**
+With multiple mechanics working, a race condition may occur if two users attempt to claim the same task simultaneously. To guarantee stable state operations, we will utilize **Firestore Transactions** when a mechanic claims a task or updates its status. This ensures atomic updates—if another mechanic claimed it milliseconds prior, the transaction fails safely without overwriting the state logic.
+
+### **3.3 Functional Data Transforming**
 To populate the Admin Dashboard analytics (e.g., "Vehicles Today", "Active Repairs"), the ViewModels will utilize Kotlin Higher-Order Functions to transform the raw Firestore lists without relying on imperative `for` loops.
 
 - `checkins.count { it.timestamp >= startOfDay }` ➔ Vehicles Today.
@@ -108,7 +116,8 @@ To populate the Admin Dashboard analytics (e.g., "Vehicles Today", "Active Repai
 To achieve the 20/20 Code grading criteria (which mandates Unit Tests), we will adhere to the **Testing Pyramid**:
 
 - **Unit Tests (70%):** Located in `src/test/`, we will test the pure Kotlin logic in `:core:domain` and the ViewModels.
-- **Frameworks:** We will use **JUnit4/5**, **Truth** for assertions, and **MockK** to mock Firebase dependencies, ensuring tests run instantly on the JVM without requiring an emulator.
+- **UI Tests (30%):** Located in `src/androidTest/`, we will implement **Jetpack Compose UI Tests** utilizing `createComposeRule()`. These will verify that user interactions (e.g., tapping "AUTHORIZE CHECK-IN") seamlessly trigger the correct view model updates.
+- **Frameworks:** We will use **JUnit4/5**, **Truth** for assertions, and **MockK** to mock Firebase dependencies, ensuring tests run instantly on the JVM without requiring an emulator. The UI layer will rely on the `ui-test-junit4` artifacts.
 - **Pattern:** All tests will be structured using the **Arrange-Act-Assert (AAA)** methodology.
 
 ---
