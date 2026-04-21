@@ -1,99 +1,123 @@
-## **Stage 3: Design**
+# **Stage 3: Design**
 
-### **1. High-Level Design (HLD) - The Architecture**
+## **1. High-Level Design (HLD) - The Architecture**
 
-To get the 20/20 for "App Architecture (Layered architecture, modularisation, and resource files)," we will use a modern multi-module MVVM (Model-View-ViewModel) architecture, inspired by Google's official *Now in Android* app.
+To achieve 20/20 for "App Architecture (Layered architecture, modularisation, and resource files)," we are utilizing a modern multi-module MVVM architecture, strictly adhering to Unidirectional Data Flow (UDF), High Cohesion, Low Coupling, and the Dependency Inversion principle.
 
 **The Tech Stack:**
 
-- **Backend/Database:** Firebase Authentication (for logging in) & Firebase Cloud Firestore (NoSQL real-time database).
+- **Backend/Database:** Firebase Authentication (for role-based identity) & Firebase Cloud Firestore (NoSQL real-time database).
 - **Dependency Injection:** Dagger Hilt.
-- **Asynchronous Programming:** Kotlin Coroutines & `StateFlow`.
-- **UI:** Jetpack Compose.
+- **Asynchronous Programming:** Kotlin Coroutines (`Dispatchers.IO` for network, `Dispatchers.Main` for UI) & `StateFlow` scoped to `ViewModelScope` to prevent memory leaks.
+- **UI:** Jetpack Compose (Material Design 3).
 
-**The Multi-Module Structure:**
-Instead of putting everything in one folder, we will structure the Android Studio project like this:
+**The Multi-Module Structure (Dependency Inversion Applied):**
+Following the strict dependency rules (Higher-level modules depend on lower-level ones), the Android Studio project is structured as:
 
-- `app` *(The main shell that ties everything together)*
-- `core`
-    - `:core:model` *(Contains the Kotlin Data Classes)*
-    - `:core:data` *(Contains Firebase Repositories and Data Sources)*
-    - `:core:ui` *(Shared UI components like custom buttons, themes, and colors)*
-- `feature`
-    - `:feature:auth` *(Login Screen)*
-    - `:feature:checkin` *(The "Airplane Boarding" flow: logging kilometers, condition, and required tasks)*
-    - `:feature:mechanic` *(The collaborative Service Board screen)*
-    - `:feature:admin` *(Valentine's report dashboard)*
+- `app` *(The entry point. Wires everything together using Hilt).*
+- `core` *(High Cohesion modules)*
+    - `:core:model` *(Pure Kotlin Data Classes and Enums. No Android dependencies).*
+    - `:core:domain` *(Pure Kotlin Business Logic, UseCases, and Repository Interfaces).*
+    - `:core:data` *(Repository Implementations for Firestore. Depends on `:core:domain`).*
+    - `:core:ui` *(Shared Compose elements, typography, icons, and color palette).*
+- `feature` *(Depends on `:core:domain` and `:core:ui`)*
+    - `:feature:auth` *(Secure Login & Session Initialization)*
+    - `:feature:checkin` *(Vehicle Registration & Intake Flow)*
+    - `:feature:mechanic` *(Collaborative Service Board & Dashboards)*
+    - `:feature:admin` *(Valentine's Overview & Audit Trails)*
 
-*Architectural Flow (UDF):* Firebase (Data Layer) ➔ `Repository` ➔ `ViewModel` ➔ `StateFlow` ➔ Jetpack Compose UI.
+*Architectural Flow (UDF):* Firebase ➔ `:core:data` (Impl) ➔ `:core:domain` (Interface) ➔ `ViewModel` ➔ `StateFlow` ➔ Jetpack Compose UI.
 
 ---
 
-### **2. Low-Level Design (LLD) - Firebase Schema & Kotlin Data Models**
+## **2. Low-Level Design (LLD) - Firebase Schema & Kotlin Data Models**
 
-Since Firestore is a NoSQL database, we need to design our "Collections" and "Documents." We will put these exact `data class` definitions inside the `:core:model` module.
+The Firestore NoSQL schema maps to the UI elements. These pure Kotlin definitions live in `:core:model`.
 
-**Collection 1: `users`***(Tracks who is who, crucial for accountability. Note: Registration is disabled for security. Admin provisions accounts via Firebase Console, and mechanics use "Forgot Password" to set their secure key).*
+**Collection 1: `users`** *(Admin provisions accounts via Firebase Console, mechanics use "Forgot Password").*
 
 ```kotlin
 data class User(
     val id: String = "",           // Firebase Auth UID
     val name: String = "",         // e.g., "John Doe"
-    val role: Role = Role.MECHANIC // Enum: MECHANIC or ADMIN (Valentine)
+    val initials: String = "",     // e.g., "JD" (used for UI avatars)
+    val role: Role = Role.MECHANIC // Enum: MECHANIC or ADMIN
 )
-
 enum class Role { MECHANIC, ADMIN }
 ```
 
-**Collection 2: `vehicles`***(Just the static details of the truck)*
+**Collection 2: `vehicles`** *(Static physical details of the truck).*
 
 ```kotlin
 data class Vehicle(
-    val id: String = "",           // Auto-generated Firestore ID
-    val licensePlate: String = "", // e.g., "N 12345 W"
-    val model: String = ""         // e.g., "Toyota Hilux"
+    val id: String = "",
+    val licensePlate: String = "",
+    val model: String = ""
 )
 ```
 
-**Collection 3: `check_ins`***(The core event! If a truck comes twice, it's two separate events).*
+**Collection 3: `check_ins`** *(The core intake event: If a truck comes twice, it's two separate events).*
 
 ```kotlin
 data class CheckIn(
-    val id: String = "",             // Auto-generated Firestore ID
-    val vehicleId: String = "",      // Links back to the Vehicle
-    val timestamp: Long = 0L,        // When it arrived
-    val kilometersDriven: Int = 0,   // Captures the number of kilometers driven
-    val initialCondition: String = "",// Condition of the vehicles to prevent misuse
-    val checkedInBy: String = "",    // User ID of who checked it in
-    val isCompleted: Boolean = false // True when all linked tasks are DONE
+    val id: String = "",
+    val vehicleId: String = "",
+    val timestamp: Long = 0L,        // Arrival time
+    val kilometersDriven: Int = 0,   // "Odometer" reading
+    val initialCondition: String = "",
+    val checkedInBy: String = "",    // UID / Name of the mechanic who logged it
+    val isCompleted: Boolean = false // Set to true when Admin clicks "VEHICLE CLEARED"
 )
 ```
 
-**Collection 4: `tasks`***(The collaborative checklist. Updated to support a Scrum/Kanban workflow for real-time collaboration).*
+**Collection 4: `tasks`** *(The collaborative checklist supporting a Scrum/Kanban workflow).*
 
 ```kotlin
-enum class TaskStatus {
-    TODO,
-    IN_PROGRESS,
-    DONE
-}
+enum class TaskStatus { TODO, IN_PROGRESS, DONE }
+enum class TaskPriority { HIGH, NORMAL, LOW }
 
 data class Task(
-    val id: String = "",             // Auto-generated Firestore ID
-    val checkInId: String = "",      // Which check-in event this belongs to
-    val description: String = "",    // What needs to be done (e.g., "Fix brakes")
-    val status: TaskStatus = TaskStatus.TODO, // The Scrum Status
-    val mechanicId: String? = null,  // Accountability: WHO is currently working on it / finished it?
-    val mechanicName: String? = null,// Easier display on the UI
-    val notes: String = ""           // Notes added when moving from IN_PROGRESS to DONE
+    val id: String = "",
+    val checkInId: String = "",      // Links to the specific CheckIn event
+    val name: String = "",           // e.g., "Oil Filter Replacement"
+    val description: String = "",    // e.g., "Full synthetic 5W-30 replacement..."
+    val status: TaskStatus = TaskStatus.TODO,
+    val priority: TaskPriority = TaskPriority.NORMAL,
+    val mechanicId: String? = null,  // Accountability: WHO claimed/finished it
+    val mechanicName: String? = null,
+    val mechanicInitials: String? = null, // e.g., "JD"
+    val completedAt: Long? = null,   // Feeds the "Actioned by... at 14:35" Audit UI
+    val notes: String = ""           // Diagnostic notes added upon completion
 )
 ```
 
 ---
 
-### **3. UI/UX Design - Screens**
+## **3. Data Processing & Functional Programming Strategy**
 
-### **Global Design System (Feed this to the AI first)**
+To populate the Admin Dashboard analytics (e.g., "Vehicles Today", "Active Repairs"), the ViewModels will utilize Kotlin Higher-Order Functions to transform the raw Firestore lists without relying on imperative `for` loops.
+
+- `checkins.count { it.timestamp >= startOfDay }` ➔ Vehicles Today.
+- `tasks.filter { it.status == TaskStatus.DONE }` ➔ Completed Tasks.
+- `tasks.groupBy { it.status }` ➔ Categorizes the Service Board lists dynamically.
+
+---
+
+## **4. Testing Strategy (QA)**
+
+To achieve the 20/20 Code grading criteria (which mandates Unit Tests), we will adhere to the **Testing Pyramid**:
+
+- **Unit Tests (70%):** Located in `src/test/`, we will test the pure Kotlin logic in `:core:domain` and the ViewModels.
+- **Frameworks:** We will use **JUnit4/5**, **Truth** for assertions, and **MockK** to mock Firebase dependencies, ensuring tests run instantly on the JVM without requiring an emulator.
+- **Pattern:** All tests will be structured using the **Arrange-Act-Assert (AAA)** methodology.
+
+---
+
+## **5. UI/UX Design - Screens & Navigation Constraints**
+
+The navigation logic is strictly separated by Role. **Bottom Navigation Bars are strictly limited to two tabs maintaining enterprise focus.**
+
+### **Global Design System**
 
 - **Design Language:** Material Design 3 (MD3).
 - **Theme/Vibe:** Industrial, Enterprise, Secure, High-Contrast, Professional.
@@ -107,119 +131,241 @@ data class Task(
 - **Typography:** 'Inter' or 'Roboto'. Bold/Black for headers, Medium for buttons, Regular for body text.
 - **Card Style:** Elevated cards with 8dp rounded corners, subtle drop shadow, and padding of 16dp.
 
-*Security Note:* The **Login Screen** explicitly removes the "Create Account" option. It acts as an industrial "Authorised Personnel Only" portal. It routes the user based on their Firestore `role` securely.
-
----
-
-### **Screen 1: The Login Screen (Shared Entry Point)**
-
-- **Layout:** Vertical centered alignment.
-- **Top/Background:** A subtle gradient background (Light grey to white).
-- **Logo/Header:** An industrial wrench/gear icon inside a soft grey rounded square. Below it, bold text: **"VALENTINE’S GARAGE"** and a subtitle in grey: *"Precision Diagnostics & Repair Portal"*.
-- **Main Card (Center):** A white elevated card containing:
-    - Text input field 1: Label "TECHNICIAN EMAIL", left icon (user silhouette), placeholder "[name@valentines.com](mailto:name@valentines.com)". Background slightly grey.
-    - Text input field 2: Label "SECURITY KEY", left icon (padlock), placeholder "••••••••". Right-aligned above it, a small orange text link: "FORGOT PASSWORD?".
-    - Button: Large, full-width, filled Primary Orange button. Text: **"INITIALIZE SESSION"** with a "login" arrow icon on the right.
-- **Footer:** Small, centered grey text at the absolute bottom: *"© 2026 VALENTINE'S GARAGE. INTERNAL USE ONLY. AUTHORISED PERSONNEL PROCEED."*
+![image.png](attachment:85645f5f-38e2-47cd-9c1c-265b07e9579b:image.png)
 
 ---
 
 ### **Journey A: The Mechanic (The Garage Floor)**
 
-*UI Focus: Large tap targets (for gloved hands), high visibility, and fast interactions.*
+**Screen 1: The Login Screen (Shared Entry Point)**
 
-### **Screen 2: Mechanic Dashboard (Active Repairs)**
+- **Navigation:** No TopAppBar, No BottomNavBar.
+- **UI:** Vertical centered. Orange wrench/gear logo in a grey rounded square. Title: "VALENTINE’S GARAGE", Subtitle: "PRECISION DIAGNOSTICS & REPAIR PORTAL".
+- **Fields:** "TECHNICIAN EMAIL" (user icon) and "SECURITY KEY" (padlock icon). "FORGOT PASSWORD?" link aligned right above the password field.
+- **Action:** Primary Orange button: **"INITIALIZE SESSION ➔]"**.
 
-- **Top App Bar:** Steel Grey background. Left title: "Active Repairs". Right side: Mechanic’s Profile Avatar (circle).
-- **Content Area:** A `LazyColumn` (vertically scrolling list) with a light grey background.
-- **List Item (Vehicle Card):**
-    - White elevated card.
-    - **Top Row:** Bold License Plate text (e.g., "N 12345 W") on the left. On the right, a grey pill-shaped badge showing the time elapsed since arrival (e.g., "2 hrs ago").
-    - **Middle Row:** Subtitle text showing Vehicle Model (e.g., "Toyota Hilux").
-    - **Bottom Row:** A horizontal progress bar (Orange) showing task completion (e.g., "2/5 Tasks Done").
-- **Floating Action Button (FAB):** Positioned bottom-right. Large, circular, Primary Orange background with a bold white "+" icon. (Action: Opens New Check-In).
+*Security Note:* The **Login Screen** explicitly removes the "Create Account" option. It acts as an industrial "Authorised Personnel Only" portal. It routes the user based on their Firestore `role` securely.
 
-### **Screen 3: New Check-In (The "Airplane Boarding" Form)**
+![image.png](attachment:2f2c9448-7a66-4877-a82b-6e21df7691b7:image.png)
 
-- **Top App Bar:** Title "New Vehicle Intake". Left arrow to go back.
-- **Content Area:** Vertically scrolling form.
-    - **Section 1: Vehicle Identity:** Two outlined text fields side-by-side (License Plate, Vehicle Model).
-    - **Section 2: Current Metrics:** Numeric input field labeled "Odometer (Kilometers)" with a speedometer icon.
-    - **Section 3: Initial Condition:** A large, multi-line text area labeled "Intake Condition Report". Placeholder: "Describe any existing scratches, dents, or leaks..."
-    - **Section 4: Required Tasks (Dynamic List):**
-        - An input field labeled "Add Repair Task" with an orange "ADD" button next to it.
-        - Below it, a list of added tasks displayed as dismissible chips or small rows with an "X" icon to remove them.
-- **Bottom Sticky Bar:** A thick white container anchored to the bottom. Contains a full-width, Primary Orange button: **"AUTHORISE CHECK-IN"**.
+**Screen 2: Mechanic Dashboard (Active Repairs)**
 
-### **Screen 4: Collaborative Service Board (Scrum/Kanban)**
+- **Navigation:** BottomNavBar VISIBLE (Tabs: **GARAGE** [Active/Orange], **PROFILE** [Inactive/Grey]).
+- **UI:** TopAppBar in Steel Grey with white text "ACTIVE REPAIRS" and a wrench/arm icon on the left.
+- **Cards:** White elevated cards.
+    - Top: License Plate (Bold) and a grey pill badge showing time (e.g., "2 HRS AGO").
+    - Middle: Vehicle Model & Main issue (e.g., "Toyota Hilux — Engine Diagnostics").
+    - Bottom: "PROGRESS" text with a percentage and an Orange LinearProgressIndicator.
+- **Action:** Bottom-right Orange FAB (Rounded Square shape) with a white "+" icon.
 
-- **Top App Bar:** Shows License Plate and Model.
-- **Sub-Header Card:** A collapsed card at the top. Shows Odometer and Intake Condition. (Expandable if tapped).
-- **Navigation/Tabs:** A sticky `TabRow` just below the header with 3 equally spaced tabs: **"TO DO"**, **"IN PROGRESS"**, **"DONE"**. The active tab has an orange underline.
-- **Tab View 1 (TO DO):**
-    - List of task cards.
-    - Card shows Task Description in bold.
-    - Bottom right of the card: An outlined orange button **"START WORK"**. (Tapping moves it to In Progress).
-- **Tab View 2 (IN PROGRESS):**
-    - Card shows Task Description.
-    - Below description: An Amber/Yellow badge with a person icon reading: *"In Progress by [Mechanic Name]"*.
-    - If the logged-in mechanic owns the task: A filled orange button **"FINISH & ADD NOTES"** appears. If owned by someone else, button is hidden.
-- **Bottom Sheet Modal (Triggered by "Finish & Add Notes"):**
-    - Slides up from the bottom. Title: "Complete Task".
-    - Text input field: "Repair Notes / Parts Used".
-    - Full-width Green button: **"MARK AS DONE"**.
-- **Tab View 3 (DONE):**
-    - Card shows Task Description with a strikethrough.
-    - Below description: A Green badge reading: *"Completed by [Mechanic Name]"*.
-    - A grey text block below showing the exact notes they typed.
+![image.png](attachment:c425c01e-4144-48e2-b65a-5fbb75eb5ea5:image.png)
+
+**Screen 3: New Check-In ("New Vehicle Intake")**
+
+- **Navigation:** TopAppBar (White) with back arrow, Orange title "NEW VEHICLE INTAKE", and a user profile icon on the right. BottomNavBar HIDDEN.
+- **UI:** Vertically scrolling form.
+    - **Section 1:** Header "SERVICE PROTOCOL: VEHICLE REGISTRATION" with subtext.
+    - **Section 2:** Text fields for "LICENSE PLATE" and "VEHICLE MODEL".
+    - **Section 3:** Text field "ODOMETER (KILOMETERS)" with dashboard icon.
+    - **Section 4:** Text area "INTAKE CONDITION REPORT" (clipboard icon).
+    - **Section 5 (Dynamic List):** "MAINTENANCE SCOPE". Two input fields: "TASK NAME" and "TASK DESCRIPTION". Large Orange "ADD" button below them. Added tasks appear below as light blue chips (e.g., "OIL CHANGE X").
+- **Action:** Bottom sticky Orange button: **"AUTHORIZE CHECK-IN"**.
+
+![image.png](attachment:16c43daf-55ff-434f-92ff-a96a67546cb5:image.png)
+
+**Screen 4: Collaborative Service Board (Scrum Board)**
+
+- **Navigation:** TopAppBar with back arrow, License Plate (e.g., "N 12345 W" in orange), and user icon. BottomNavBar HIDDEN.
+- **Header Card:** Shows "ODOMETER" and "CONDITION" with relevant icons.
+- **Tabs:** Sticky `TabRow` (**TO DO** | **IN PROGRESS** | **DONE**). Active tab has an orange underline.
+    - **TO DO View:** Task cards showing Task Name (Bold) and Description. Bottom row: Mechanic Initials circle (e.g., "JD") and an outlined red/orange button **"START WORK"**.
+    - **DONE View:** Task cards showing Task Name (strikethrough text) with a grey checkmark icon. Light blue pill badge: **"✔ COMPLETED BY [NAME]"**. Below it, a grey box containing the exact repair notes.
+- **Modal (Triggered by moving a task to Done):**
+    - A centered popup/dialog. Title: "COMPLETE TASK" with an 'X' to close.
+    - Displays the Task Name.
+    - Text input field: "REPAIR NOTES / PARTS USED".
+    - Action: Full-width Green button **"MARK AS DONE ✔"**.
+    
+    ![image.png](attachment:fc46082e-b1c0-4b3a-987b-763f48eb3b1e:image.png)
+    
+
+![image.png](attachment:b4a288a1-5a2d-4809-a8f1-f101893d3667:image.png)
+
+![image.png](attachment:fad6d308-37ce-4173-b2a5-4e2c061639dd:image.png)
+
+![image.png](attachment:eab61c4f-d7d1-4080-ba3c-83a89337fc8d:image.png)
 
 ---
 
 ### **Journey B: Admin / Valentine (The HQ)**
 
-*UI Focus: Data density, analytics, read-only audit trails, and filtering.*
+**Screen 5: Admin Dashboard (Valentine's Overview)**
 
-### **Screen 5: Admin Dashboard (Overview)**
+- **Navigation:** BottomNavBar VISIBLE (Tabs: **OVERVIEW** [Active/Orange icon], **PROFILE** [Inactive/Grey]).
+- **UI:**
+    - TopAppBar: Orange Title "VALENTINE'S OVERVIEW" + Search Icon + Profile Icon.
+    - **Analytics Header:** A horizontally scrolling row (`LazyRow`) of square white cards with orange icons/text. Card 1: "VEHICLES TODAY" (14). Card 2: "ACTIVE REPAIRS" (6). Card 3: "COMPLETED TODAY" (8).
+    - **Search Bar:** OutlinedTextField: "Search License Plate".
+    - **History List ("Daily Log"):** List of check-ins. Left: Time/Date. Middle: License Plate & Model. Right: Status pill (Light Blue "COMPLETED" or Light Orange "IN PROGRESS").
+    
+    ![image.png](attachment:57231efb-8911-47e9-bcde-64dc4c9b2a8a:image.png)
+    
 
-- **Navigation:** BottomNavigationBar (Tabs: **OVERVIEW** [Active], **PROFILE** [Inactive]).
-- **Top App Bar:** Steel Grey background. Title "Valentine's Overview".
-- **Analytics Header (Top):** A horizontal scrolling row (`LazyRow`) of square summary cards:
-    - Card 1: "Vehicles Today" (Big number: 14)
-    - Card 2: "Active Repairs" (Big number: 6)
-    - Card 3: "Completed Today" (Big number: 8)
-- **Search Bar:** Below the metrics. A full-width search input with a magnifying glass icon. Placeholder: "Search by License Plate or Mechanic".
-- **Content Area (History List):**
-    - List of historical Check-In cards.
-    - Card Layout: Left side shows Date & Time. Middle shows License Plate & Model. Right side shows a status badge (Green "COMPLETED" or Orange "IN PROGRESS").
+**Screen 6: Accountability Report (The Audit Trail)**
 
-### **Screen 6: Accountability Report (The Audit Trail)**
+- **Navigation:** TopAppBar "AUDIT: N 12345 W" with Print & Share icons. BottomNavBar HIDDEN.
+- **UI:**
+    - **Header:** Light grey background. Shows "ARRIVED" (Time), "CHECKED IN BY" (Name), "ODOMETER", "INITIAL CONDITION", and a calendar box with the Date.
+    - **Timeline:** Title "Audit Timeline" with a blue badge "4 TASKS VERIFIED".
+    - **Task Cards:**
+        - Task Name with a solid orange checkmark icon.
+        - **Accountability Row:** Initials circle (e.g., "JD"), text: *"Actioned by: John Doe at 14:35"*.
+        - **Notes:** Pale yellow bordered box containing the exact diagnostic notes in italics.
+- **Action:** Bottom sticky Vibrant Blue button: **"✔ VEHICLE CLEARED"** (Updates `CheckIn.isCompleted` to `true`).
 
-- **Top App Bar:** Title "Audit Report: [License Plate]". Left arrow to go back. Right side: A "Print/Export" icon.
-- **Top Section (Intake Snapshot):**
-    - A solid grey card containing static data: Arrival Time, Checked-in By (Name), Intake Kilometers, and the exact Initial Condition text.
-- **Middle Section (The Timeline):**
-    - A vertical timeline UI (a line running down the left side with dots for each task).
-    - Next to each dot is a Task Card.
-    - **Task Card Design:**
-        - Task Name (e.g., "Brake Pad Replacement").
-        - **Accountability Tag:** A distinct UI row inside the card with a tiny avatar, showing: *"Actioned by: John Doe at 14:35"*.
-        - **Notes Block:** A light yellow or grey box with quote marks containing the mechanic's exact notes (e.g., *"Replaced front pads. Rotors looked fine."*).
-- **Bottom Section (Sign-off):**
-    - If the vehicle is completed, a large green footer block: "VEHICLE CLEARED".
+![image.png](attachment:65ecedcc-72cb-4d77-8233-b7f3c5e8b518:image.png)
 
 ---
 
-### **Shared Screens**
+### **Shared Screen**
 
-**7. User Profile**
+**Screen 7: User Profile**
 
-- **Purpose:** Session management and settings.
-- **Navigation:** BottomNavigationBar (Tabs: **GARAGE/OVERVIEW** [Inactive], **PROFILE** [Active]).
-- **Top App Bar:** Title "My Profile".
-- **Content:**
-    - Large centered User Avatar (Circle).
+- **Navigation:** BottomNavBar VISIBLE (Tabs: Garage/Overview [Inactive], **PROFILE** [Active/Orange]).
+- **UI:**
+    - TopAppBar: Orange title "MY PROFILE".
+    - Large centered User Avatar (Orange rounded square outline with Initials inside, e.g., "JD").
     - Text: "John Doe" (Large, Bold).
-    - Text: "Role: Senior Mechanic" (Grey, Medium).
-    - Spacer.
-    - An Outlined Button: "Change Password".
-    - A large filled Red Button at the bottom: **"SECURE LOGOUT"**.
+    - Text: "ROLE: SENIOR MECHANIC" (Grey).
+    - List Item: "Change Password" row with an arrow.
+- **Action:** Large Deep Red Button: **"SECURE LOGOUT"** (Terminates Firebase session).
+
+![image.png](attachment:36d1103d-9363-4726-84fa-be39448fb6bd:image.png)
+
+---
+
+# Design System Specification: Industrial Precision & Tonal Depth
+
+## 1. Overview & Creative North Star
+
+### The Creative North Star: "The Digital Foreman"
+
+This design system moves beyond the generic utility of industrial software to create a "Digital Foreman" experience—an environment that feels as authoritative and well-engineered as the heavy machinery it manages. We are eschewing the "flat web" look in favor of **Organic Industrialism**.
+
+The aesthetic is characterized by high-contrast legibility, intentional asymmetry, and a sophisticated layering of neutral tones that mimic the depth of a professional garage floor. By breaking the standard grid with overlapping elements and using tonal shifts instead of structural lines, we create a UI that feels high-end, secure, and bespoke.
+
+---
+
+## 2. Colors & Tonal Architecture
+
+The palette is rooted in the "Amber" of industrial warning lights and the "Iron" of structural steel.
+
+### Palette Roles
+
+- **Primary (`#9f4200` / `#ff6d00`):** Used exclusively for high-intent actions. This is your "Caution: Action Required" signal.
+- **Secondary (`#4c616c`):** The "Steel" foundation. Used for app bars and structural navigation to provide a sense of enterprise security.
+- **Surface Tiers:** We utilize the MD3 surface container system to create depth without clutter.
+
+### The "No-Line" Rule
+
+**Explicit Instruction:** Designers are prohibited from using 1px solid borders to section off content. Content boundaries must be defined solely through background color shifts. For example, a `surface-container-lowest` card should sit atop a `surface-container-low` background. This creates a seamless, modern "editorial" feel.
+
+### The Glass & Gradient Rule
+
+To prevent the UI from feeling "flat" or "dated," incorporate the following:
+
+- **Signature Textures:** Main CTAs should use a subtle vertical gradient from `primary` (#9f4200) to `primary_container` (#ff6d00). This provides a "machined" metallic sheen.
+- **Glassmorphism:** Floating elements, such as navigation rails or top-tier modals, should utilize a semi-transparent `surface` color with a `20px` backdrop-blur. This ensures the industrial "Iron" background bleeds through, softening the interface while maintaining hierarchy.
+
+---
+
+## 3. Typography: The Engineered Scale
+
+We use typography to reinforce the "Professional/Enterprise" vibe.
+
+- **Display & Headline (Space Grotesk):** This typeface features quirky, engineered terminals that mimic technical blueprints. Use **Bold/Black** weights for `headline-lg` to create a sense of immovable authority.
+- **Body & Labels (Inter):** A workhorse typeface chosen for its high x-height and readability in high-stress industrial environments.
+- **Hierarchy Note:** Use wide tracking (letter-spacing: 0.05em) on `label-sm` to give the UI a premium, "dashboard" look.
+
+| Role | Font | Size | Weight |
+| --- | --- | --- | --- |
+| **Display-LG** | Space Grotesk | 3.5rem | Bold |
+| **Headline-MD** | Space Grotesk | 1.75rem | Medium |
+| **Title-SM** | Inter | 1rem | Semi-Bold |
+| **Body-MD** | Inter | 0.875rem | Regular |
+| **Label-MD** | Inter | 0.75rem | Medium (All Caps) |
+
+---
+
+## 4. Elevation & Depth
+
+In this design system, depth is a functional tool, not a decoration.
+
+### The Layering Principle
+
+Hierarchy is achieved by "stacking" surface tiers.
+
+1. **Level 0 (Background):** `surface` (#f8fafb)
+2. **Level 1 (Sections):** `surface_container_low` (#f2f4f5)
+3. **Level 2 (Cards):** `surface_container_lowest` (#ffffff)
+
+### Ambient Shadows
+
+Traditional drop shadows are too "software-standard." Instead, use **Ambient Shadows**:
+
+- **Blur:** 24dp to 32dp.
+- **Opacity:** 4% - 6%.
+- **Color:** Use a tinted version of `on_surface` (a deep slate) rather than pure black. This mimics natural light reflecting off metallic surfaces.
+
+### The "Ghost Border" Fallback
+
+If a border is required for accessibility (e.g., in high-glare environments), use the **Ghost Border**: The `outline_variant` token at **15% opacity**. Never use 100% opaque borders.
+
+---
+
+## 5. Components
+
+### Buttons: High-Contrast Tools
+
+- **Primary:** `primary_container` (#ff6d00) background with `on_primary` (#ffffff) text.
+- **Radius:** `sm` (4px/0.25rem). A tighter radius feels more "industrial" and precise than rounded "bubbly" buttons.
+- **State:** On hover, apply a `surface_tint` overlay at 8% to simulate a glowing amber light.
+
+### Cards: The Cargo Container
+
+- **Construction:** Elevated white cards (`surface_container_lowest`).
+- **Radius:** `lg` (8px/0.5rem).
+- **Padding:** Strict 16dp internal gutters.
+- **Restriction:** Forbid the use of divider lines within cards. Use `8dp` of vertical white space to separate header from body content.
+
+### Input Fields: Machined Precision
+
+- **Style:** Outlined. Use the `outline` token (#8d7164).
+- **Iconography:** Sharp Material Symbols (2pt stroke). Every input should be accompanied by an industrial icon (e.g., a `precision_manufacturing` gear for settings or `local_shipping` for logistics).
+
+### Additional Component: The "Status Bar" Chip
+
+For industrial workflows, use high-contrast status chips.
+
+- **Success:** Emerald Green (#2E7D32) background, white text, `none` (0px) corner radius for a "stamped" label look.
+
+---
+
+## 6. Do’s and Don’ts
+
+### Do:
+
+- **Do** use asymmetrical layouts (e.g., a large headline on the left with 40% empty space to the right).
+- **Do** lean into "Steel" (#455A64) for top-level navigation to anchor the experience.
+- **Do** use `Space Grotesk` sparingly—only for headers—to maintain its visual impact.
+
+### Don’t:
+
+- **Don’t** use shadows on every card. Rely on background color shifts first.
+- **Don’t** use "Rounded Full" pill buttons; they conflict with the industrial aesthetic. Stick to `sm` (4px) or `none` (0px).
+- **Don’t** use standard blue for links. Everything interactive is **Amber** (#FF6D00).
+- **Don’t** use 1px dividers to separate list items. Use `surface_container_high` as a subtle background strip for every other row.
+
+---
+
+**Director's Note:** This system is about the *weight* of the interface. Every element should feel like it was bolted into place with purpose. Respect the white space; it is the "ventilation" of your design.```
