@@ -21,3 +21,11 @@ dependencyResolutionManagement {
 
 rootProject.name = "ValentineGarage"
 include(":app")
+include(":core:model")
+include(":core:domain")
+include(":core:data")
+include(":core:ui")
+include(":feature:auth")
+include(":feature:checkin")
+include(":feature:mechanic")
+include(":feature:admin")
