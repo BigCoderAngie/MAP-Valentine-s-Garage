@@ -156,7 +156,7 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
 
 *Security Note:* The **Login Screen** explicitly removes the "Create Account" option. It acts as an industrial "Authorised Personnel Only" portal. It routes the user based on their Firestore `role` securely.
 
-<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/2f37f5e2-6675-4fd4-9a5a-c58e83655e0c" />
+<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/c8c8275f-9b75-42d0-b3a9-e2309a8a842d" />
 
 
 **Screen 2: Mechanic Dashboard (Active Repairs)**
@@ -169,7 +169,7 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - Bottom: "PROGRESS" text with a percentage and an Orange LinearProgressIndicator.
 - **Action:** Bottom-right Orange FAB (Rounded Square shape) with a white "+" icon.
 
-<img width="467" height="1600" alt="image" src="https://github.com/user-attachments/assets/e41f2191-5c62-4e82-9108-e3a8eb75059d" />
+<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/2f37f5e2-6675-4fd4-9a5a-c58e83655e0c" />
 
 
 **Screen 3: New Check-In ("New Vehicle Intake")**
@@ -183,7 +183,7 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - **Section 5 (Dynamic List):** "MAINTENANCE SCOPE". Two input fields: "TASK NAME" and "TASK DESCRIPTION". Large Orange "ADD" button below them. Added tasks appear below as light blue chips (e.g., "OIL CHANGE X").
 - **Action:** Bottom sticky Orange button: **"AUTHORIZE CHECK-IN"**.
 
-<img width="428" height="1600" alt="image" src="https://github.com/user-attachments/assets/cd923142-ec1e-4ed9-aa02-2f7ba7405a38" />
+<img width="467" height="1600" alt="image" src="https://github.com/user-attachments/assets/e41f2191-5c62-4e82-9108-e3a8eb75059d" />
 
 
 **Screen 4: Collaborative Service Board (Scrum Board)**
@@ -198,11 +198,11 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - Displays the Task Name.
     - Text input field: "REPAIR NOTES / PARTS USED".
     - Action: Full-width Green button **"MARK AS DONE ✔"**.
-    
-<img width="684" height="1600" alt="image" src="https://github.com/user-attachments/assets/8e53e4c1-0795-4a09-a650-77521ea09e3a" />
-<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/b2f7ef88-a093-4c2a-a692-45fde309190b" />
-<img width="532" height="1600" alt="image" src="https://github.com/user-attachments/assets/83120913-2ca5-4df1-8b7a-8574a671f8e0" />
-<img width="588" height="1600" alt="image" src="https://github.com/user-attachments/assets/2a40623c-77e5-4285-9df9-04747cbc0918" />
+
+    <img width="428" height="1600" alt="image" src="https://github.com/user-attachments/assets/cd923142-ec1e-4ed9-aa02-2f7ba7405a38" />
+    <img width="684" height="1600" alt="image" src="https://github.com/user-attachments/assets/8e53e4c1-0795-4a09-a650-77521ea09e3a" />
+    <img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/b2f7ef88-a093-4c2a-a692-45fde309190b" />
+    <img width="532" height="1600" alt="image" src="https://github.com/user-attachments/assets/83120913-2ca5-4df1-8b7a-8574a671f8e0" />
 
 
 ---
@@ -217,8 +217,10 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
     - **Analytics Header:** A horizontally scrolling row (`LazyRow`) of square white cards with orange icons/text. Card 1: "VEHICLES TODAY" (14). Card 2: "ACTIVE REPAIRS" (6). Card 3: "COMPLETED TODAY" (8).
     - **Search Bar:** OutlinedTextField: "Search License Plate".
     - **History List ("Daily Log"):** List of check-ins. Left: Time/Date. Middle: License Plate & Model. Right: Status pill (Light Blue "COMPLETED" or Light Orange "IN PROGRESS").
+ 
+      <img width="588" height="1600" alt="image" src="https://github.com/user-attachments/assets/2a40623c-77e5-4285-9df9-04747cbc0918" />
     
-<img width="426" height="1600" alt="image" src="https://github.com/user-attachments/assets/1bd41f89-6b3d-4dfc-9eec-d74ec8ecefdb" />
+
 
     
 
@@ -234,7 +236,7 @@ The navigation logic is strictly separated by Role. **Bottom Navigation Bars are
         - **Notes:** Pale yellow bordered box containing the exact diagnostic notes in italics.
 - **Action:** Bottom sticky Vibrant Blue button: **"✔ VEHICLE CLEARED"** (Updates `CheckIn.isCompleted` to `true`).
 
-<img width="706" height="1600" alt="image" src="https://github.com/user-attachments/assets/c8c8275f-9b75-42d0-b3a9-e2309a8a842d" />
+  <img width="426" height="1600" alt="image" src="https://github.com/user-attachments/assets/1bd41f89-6b3d-4dfc-9eec-d74ec8ecefdb" />
 
 
 ---
